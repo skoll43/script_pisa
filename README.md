@@ -63,8 +63,8 @@ Esta herramienta está diseñada para **uso en red local únicamente**. El servi
 ## 📝 Ejemplo de Caso de Uso
 
 ```
-Laptop del profesor: Ejecuta script del portal PISA
-Dispositivos de estudiantes: Simplemente escriben http://pisa.local
+Asistente con su notebook: Ejecuta script
+Sin tipear las URL: Simplemente escriben http://pisa.local en los PC de estudiantes
 Resultado: Acceso instantáneo al launcher
 ```
 
