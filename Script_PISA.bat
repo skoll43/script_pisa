@@ -1,8 +1,17 @@
 @echo off
+REM ================================================
+REM              SCRIPT PISA PORTAL
+REM ================================================
 echo ================================================
 echo       Configuracion Portal PISA con mDNS
 echo ================================================
 echo.
+
+REM ================================================
+REM        SECCION: DETECCION DE INTERFACES
+REM        Muestra las interfaces de red disponibles
+REM        y solicita al usuario la IP a utilizar
+REM ================================================
 echo Detectando interfaces de red...
 echo.
 echo Direcciones IPv4 Disponibles:
@@ -17,12 +26,25 @@ echo - Evitar: 169.254.x.x (auto-config) o 127.x.x.x (loopback)
 echo.
 set /p ip="Ingresa tu direccion IP: "
 echo.
+
+REM ================================================
+REM        SECCION: INSTALACION DEPENDENCIAS
+REM        Instala las librerías Python necesarias
+REM        para el funcionamiento del servidor mDNS
+REM ================================================
 echo ================================================
 echo Creando servidor Python con soporte mDNS...
 echo ================================================
 echo Instalando libreria zeroconf para mDNS apropiado...
 pip install zeroconf --quiet
 echo.
+
+REM ================================================
+REM        SECCION: GENERACION SERVIDOR PYTHON
+REM        Crea dinámicamente un archivo Python que
+REM        actúa como servidor HTTP con soporte mDNS
+REM ================================================
+REM --- Creando archivo temporal del servidor ---
 echo import socket > servidor_temp.py
 echo from zeroconf import ServiceInfo, Zeroconf >> servidor_temp.py
 echo import threading >> servidor_temp.py
@@ -32,6 +54,10 @@ echo import time >> servidor_temp.py
 echo import tkinter as tk >> servidor_temp.py
 echo from tkinter import filedialog, messagebox >> servidor_temp.py
 echo. >> servidor_temp.py
+
+REM --- FUNCION: Configuracion mDNS ---
+REM     Registra el servicio en la red local como 'pisa.local'
+REM     Permite acceso por nombre en lugar de IP
 echo def configurar_mdns(ip): >> servidor_temp.py
 echo     """Configurar mDNS apropiado usando libreria zeroconf""" >> servidor_temp.py
 echo     zeroconf = Zeroconf() >> servidor_temp.py
@@ -51,6 +77,10 @@ echo     zeroconf.register_service(info_servicio) >> servidor_temp.py
 echo     print(f"✓ Servicio mDNS registrado: pisa.local -> {ip}") >> servidor_temp.py
 echo     return zeroconf, info_servicio >> servidor_temp.py
 echo. >> servidor_temp.py
+
+REM --- FUNCION: Seleccion de archivo HTML ---
+REM     Abre un diálogo para que el usuario seleccione
+REM     el archivo HTML a servir en el portal
 echo def seleccionar_archivo_html(): >> servidor_temp.py
 echo     """Abrir diálogo para seleccionar archivo HTML""" >> servidor_temp.py
 echo     root = tk.Tk() >> servidor_temp.py
@@ -88,6 +118,10 @@ echo     archivo_html = os.path.basename(ruta_archivo) >> servidor_temp.py
 echo     root.destroy() >> servidor_temp.py
 echo     return directorio_html, archivo_html >> servidor_temp.py
 echo. >> servidor_temp.py
+
+REM --- PROGRAMA PRINCIPAL ---
+REM     Coordina la selección de archivo, configuración mDNS
+REM     e inicio del servidor HTTP en el puerto 80
 echo if __name__ == "__main__": >> servidor_temp.py
 echo     import sys >> servidor_temp.py
 echo     ip = sys.argv[1] if len(sys.argv) ^> 1 else "127.0.0.1" >> servidor_temp.py
@@ -135,6 +169,11 @@ echo             zeroconf.unregister_service(info_servicio) >> servidor_temp.py
 echo             zeroconf.close() >> servidor_temp.py
 echo         servidor.shutdown() >> servidor_temp.py
 
+REM ================================================
+REM        SECCION: INICIO DEL SERVIDOR
+REM        Ejecuta el servidor Python generado y
+REM        muestra información de acceso al usuario
+REM ================================================
 echo.
 echo Iniciando servidor con mDNS:
 echo ✓ mDNS transmitiendo pisa.local a la LAN
@@ -143,5 +182,12 @@ echo ✓ Acceso por dominio: http://pisa.local (desde cualquier dispositivo)
 echo.
 echo Presiona Ctrl+C para detener el servidor
 echo.
+
+REM --- Ejecutar servidor y limpiar archivo temporal ---
+REM     Inicia el servidor Python y limpia archivos temporales al finalizar
 python servidor_temp.py %ip%
 del servidor_temp.py
+
+REM ================================================
+REM                 FIN DEL SCRIPT
+REM ================================================

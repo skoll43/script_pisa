@@ -1,4 +1,4 @@
-# 🌐 Portal PISA - Lanzador de Red Local
+# 🌐 Portal|Lanzador local - Lanzador de Red Local
 
 Una solución simple y portable para hacer tu portal HTML accesible a través de toda tu red local mediante mDNS.
 
@@ -27,7 +27,7 @@ Una solución simple y portable para hacer tu portal HTML accesible a través de
 
 ## 🎯 Perfecto Para
 
-- **Portales de Pruebas PISA** - Acceso fácil para evaluaciones educativas
+- **Ahorrrar tiempo en despliege Pruebas PISA** 
 
 
 ## 🔧 Cómo Funciona
