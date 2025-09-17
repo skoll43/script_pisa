@@ -148,25 +148,39 @@ echo     def ejecutar_servidor(): >> servidor_temp.py
 echo         servidor.serve_forever() >> servidor_temp.py
 echo     servidor_thread = threading.Thread(target=ejecutar_servidor, daemon=True) >> servidor_temp.py
 echo     servidor_thread.start() >> servidor_temp.py
-echo     print("✓ Servidor iniciado. Presiona Ctrl+C para detener...") >> servidor_temp.py
+echo     print("✓ Servidor iniciado. Presiona Ctrl+C o escribe 'cerrar' para detener...") >> servidor_temp.py
+echo     cerrar_servidor = False >> servidor_temp.py
+echo     def monitor_entrada(): >> servidor_temp.py
+echo         global cerrar_servidor >> servidor_temp.py
+echo         try: >> servidor_temp.py
+echo             while not cerrar_servidor: >> servidor_temp.py
+echo                 comando = input().strip().lower() >> servidor_temp.py
+echo                 if comando == "cerrar": >> servidor_temp.py
+echo                     print("🛑 Comando 'cerrar' recibido - cerrando servidor...") >> servidor_temp.py
+echo                     cerrar_servidor = True >> servidor_temp.py
+echo                     break >> servidor_temp.py
+echo         except EOFError: >> servidor_temp.py
+echo             pass >> servidor_temp.py
+echo     input_thread = threading.Thread(target=monitor_entrada, daemon=True) >> servidor_temp.py
+echo     input_thread.start() >> servidor_temp.py
 echo     try: >> servidor_temp.py
-echo         while servidor_thread.is_alive(): >> servidor_temp.py
+echo         while servidor_thread.is_alive() and not cerrar_servidor: >> servidor_temp.py
 echo             time.sleep(0.1) >> servidor_temp.py
 echo     except KeyboardInterrupt: >> servidor_temp.py
 echo         print("\n🛑 Interrupción detectada - cerrando servidor...") >> servidor_temp.py
+echo     try: >> servidor_temp.py
+echo         servidor.socket.close() >> servidor_temp.py
+echo     except: >> servidor_temp.py
+echo         pass >> servidor_temp.py
+echo     servidor.server_close() >> servidor_temp.py
+echo     servidor_thread.join(timeout=0.5) >> servidor_temp.py
+echo     if zeroconf and info_servicio: >> servidor_temp.py
 echo         try: >> servidor_temp.py
-echo             servidor.socket.close() >> servidor_temp.py
+echo             zeroconf.unregister_service(info_servicio) >> servidor_temp.py
+echo             zeroconf.close() >> servidor_temp.py
 echo         except: >> servidor_temp.py
 echo             pass >> servidor_temp.py
-echo         servidor.server_close() >> servidor_temp.py
-echo         servidor_thread.join(timeout=0.5) >> servidor_temp.py
-echo         if zeroconf and info_servicio: >> servidor_temp.py
-echo             try: >> servidor_temp.py
-echo                 zeroconf.unregister_service(info_servicio) >> servidor_temp.py
-echo                 zeroconf.close() >> servidor_temp.py
-echo             except: >> servidor_temp.py
-echo                 pass >> servidor_temp.py
-echo         print("✓ Servidor cerrado completamente") >> servidor_temp.py
+echo     print("✓ Servidor cerrado completamente") >> servidor_temp.py
 
 REM ================================================
 REM        SECCION: EJECUCION FINAL
