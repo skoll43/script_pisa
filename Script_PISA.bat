@@ -2,6 +2,7 @@
 REM ================================================
 REM              SCRIPT PISA PORTAL
 REM ================================================
+
 echo ================================================
 echo       Configuracion Portal PISA con mDNS
 echo ================================================
@@ -24,6 +25,7 @@ echo - Para WiFi: Normalmente 192.168.x.x o 10.x.x.x
 echo - Para Ethernet: Normalmente 192.168.x.x o 192.168.1.x
 echo - Evitar: 169.254.x.x (auto-config) o 127.x.x.x (loopback)
 echo.
+
 set /p ip="Ingresa tu direccion IP: "
 echo.
 
@@ -40,11 +42,35 @@ pip install zeroconf --quiet
 echo.
 
 REM ================================================
-REM        SECCION: GENERACION SERVIDOR PYTHON
-REM        Crea dinámicamente un archivo Python que
-REM        actúa como servidor HTTP con soporte mDNS
+REM        SECCION: INICIO DEL SERVIDOR
+REM        Ejecuta el servidor Python generado y
+REM        muestra información de acceso al usuario
 REM ================================================
-REM --- Creando archivo temporal del servidor ---
+echo.
+echo Iniciando servidor con mDNS:
+echo ✓ mDNS transmitiendo pisa.local a la LAN
+echo ✓ Acceso IP directo: http://%ip%
+echo ✓ Acceso por dominio: http://pisa.local (desde cualquier dispositivo LAN)
+echo.
+echo Presiona Ctrl+C para detener el servidor
+echo.
+
+REM --- Ejecutar servidor existente (si existe) ---
+if exist servidor_temp.py (
+    echo Usando servidor existente...
+    python servidor_temp.py %ip%
+    call :cleanup
+    goto :eof
+) else (
+    echo Generando nuevo servidor...
+)
+
+REM ================================================
+REM        GENERACION DEL SERVIDOR PYTHON
+REM        Crea dinámicamente el archivo servidor_temp.py
+REM ================================================
+
+REM --- ENCABEZADOS E IMPORTS ---
 echo import socket > servidor_temp.py
 echo from zeroconf import ServiceInfo, Zeroconf >> servidor_temp.py
 echo import threading >> servidor_temp.py
@@ -56,123 +82,95 @@ echo from tkinter import filedialog, messagebox >> servidor_temp.py
 echo. >> servidor_temp.py
 
 REM --- FUNCION: Configuracion mDNS ---
-REM     Registra el servicio en la red local como 'pisa.local'
-REM     Permite acceso por nombre en lugar de IP
 echo def configurar_mdns(ip): >> servidor_temp.py
 echo     """Configurar mDNS apropiado usando libreria zeroconf""" >> servidor_temp.py
-echo     zeroconf = Zeroconf() >> servidor_temp.py
-echo     direccion_ip = socket.inet_aton(ip) >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     # Registrar servicio HTTP >> servidor_temp.py
-echo     info_servicio = ServiceInfo( >> servidor_temp.py
-echo         "_http._tcp.local.", >> servidor_temp.py
-echo         "Portal PISA._http._tcp.local.", >> servidor_temp.py
-echo         addresses=[direccion_ip], >> servidor_temp.py
-echo         port=80, >> servidor_temp.py
-echo         properties={}, >> servidor_temp.py
-echo         server="pisa.local." >> servidor_temp.py
-echo     ) >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     zeroconf.register_service(info_servicio) >> servidor_temp.py
-echo     print(f"✓ Servicio mDNS registrado: pisa.local -> {ip}") >> servidor_temp.py
-echo     return zeroconf, info_servicio >> servidor_temp.py
+echo     try: >> servidor_temp.py
+echo         zeroconf = Zeroconf() >> servidor_temp.py
+echo         direccion_ip = socket.inet_aton(ip) >> servidor_temp.py
+echo         info_servicio = ServiceInfo( >> servidor_temp.py
+echo             "_http._tcp.local.", >> servidor_temp.py
+echo             "pisa._http._tcp.local.", >> servidor_temp.py
+echo             addresses=[direccion_ip], >> servidor_temp.py
+echo             port=80, >> servidor_temp.py
+echo             properties={'path': '/', 'version': '1.0'}, >> servidor_temp.py
+echo             server="pisa.local." >> servidor_temp.py
+echo         ) >> servidor_temp.py
+echo         zeroconf.register_service(info_servicio) >> servidor_temp.py
+echo         print(f"✓ Servicio mDNS registrado: pisa.local -> {ip}") >> servidor_temp.py
+echo         return zeroconf, info_servicio >> servidor_temp.py
+echo     except Exception as e: >> servidor_temp.py
+echo         print(f"✗ Error configurando mDNS: {e}") >> servidor_temp.py
+echo         return None, None >> servidor_temp.py
 echo. >> servidor_temp.py
 
 REM --- FUNCION: Seleccion de archivo HTML ---
-REM     Abre un diálogo para que el usuario seleccione
-REM     el archivo HTML a servir en el portal
 echo def seleccionar_archivo_html(): >> servidor_temp.py
 echo     """Abrir diálogo para seleccionar archivo HTML""" >> servidor_temp.py
 echo     root = tk.Tk() >> servidor_temp.py
-echo     root.withdraw()  # Ocultar ventana principal >> servidor_temp.py
-echo     root.attributes('-topmost', True)  # Traer al frente >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     # Buscar directorio inicial apropiado >> servidor_temp.py
-echo     directorio_inicial = None >> servidor_temp.py
-echo     directorios_posibles = [ >> servidor_temp.py
-echo         os.path.expanduser("~/Downloads"), >> servidor_temp.py
-echo         os.path.expanduser("~/Desktop"), >> servidor_temp.py
-echo         os.path.expanduser("~/Documents"), >> servidor_temp.py
-echo         os.path.expanduser("~"), >> servidor_temp.py
-echo         os.getcwd() >> servidor_temp.py
-echo     ] >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     for directorio in directorios_posibles: >> servidor_temp.py
-echo         if os.path.exists(directorio): >> servidor_temp.py
-echo             directorio_inicial = directorio >> servidor_temp.py
-echo             break >> servidor_temp.py
-echo.     >> servidor_temp.py
+echo     root.withdraw() >> servidor_temp.py
+echo     root.attributes('-topmost', True) >> servidor_temp.py
+echo     directorios_posibles = [os.path.expanduser("~/Downloads"), os.path.expanduser("~/Desktop"), os.getcwd()] >> servidor_temp.py
+echo     directorio_inicial = next((d for d in directorios_posibles if os.path.exists(d)), os.getcwd()) >> servidor_temp.py
 echo     ruta_archivo = filedialog.askopenfilename( >> servidor_temp.py
 echo         title="Seleccionar archivo HTML para servir", >> servidor_temp.py
 echo         filetypes=[("Archivos HTML", "*.html"), ("Todos los archivos", "*.*")], >> servidor_temp.py
 echo         initialdir=directorio_inicial >> servidor_temp.py
 echo     ) >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     if not ruta_archivo: >> servidor_temp.py
-echo         messagebox.showerror("Error", "No se selecciono archivo. Saliendo.") >> servidor_temp.py
-echo         root.destroy() >> servidor_temp.py
-echo         return None, None >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     directorio_html = os.path.dirname(ruta_archivo) >> servidor_temp.py
-echo     archivo_html = os.path.basename(ruta_archivo) >> servidor_temp.py
 echo     root.destroy() >> servidor_temp.py
-echo     return directorio_html, archivo_html >> servidor_temp.py
+echo     if not ruta_archivo: >> servidor_temp.py
+echo         print("Error: No se selecciono archivo. Saliendo.") >> servidor_temp.py
+echo         return None, None >> servidor_temp.py
+echo     return os.path.dirname(ruta_archivo), os.path.basename(ruta_archivo) >> servidor_temp.py
 echo. >> servidor_temp.py
 
 REM --- PROGRAMA PRINCIPAL ---
-REM     Coordina la selección de archivo, configuración mDNS
-REM     e inicio del servidor HTTP en el puerto 80
 echo if __name__ == "__main__": >> servidor_temp.py
-echo     import sys >> servidor_temp.py
+echo     import sys, shutil >> servidor_temp.py
 echo     ip = sys.argv[1] if len(sys.argv) ^> 1 else "127.0.0.1" >> servidor_temp.py
-echo.     >> servidor_temp.py
 echo     print("Seleccionar archivo HTML para servir...") >> servidor_temp.py
 echo     directorio_html, archivo_html = seleccionar_archivo_html() >> servidor_temp.py
 echo     if not directorio_html: >> servidor_temp.py
 echo         sys.exit(1) >> servidor_temp.py
-echo.     >> servidor_temp.py
 echo     print("================================================") >> servidor_temp.py
 echo     print("Iniciando Servidor Portal PISA...") >> servidor_temp.py
-echo     print("================================================") >> servidor_temp.py
 echo     print(f"Sirviendo archivo: {archivo_html}") >> servidor_temp.py
 echo     print(f"Desde directorio: {directorio_html}") >> servidor_temp.py
 echo     print(f"Acceso IP directo: http://{ip}") >> servidor_temp.py
 echo     print("Acceso mDNS: http://pisa.local") >> servidor_temp.py
 echo     print("================================================") >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     # Copiar archivo seleccionado como index.html >> servidor_temp.py
-echo     import shutil >> servidor_temp.py
-echo     archivo_origen = os.path.join(directorio_html, archivo_html) >> servidor_temp.py
-echo     archivo_index = os.path.join(directorio_html, "index.html") >> servidor_temp.py
 echo     if archivo_html != "index.html": >> servidor_temp.py
-echo         shutil.copy2(archivo_origen, archivo_index) >> servidor_temp.py
+echo         shutil.copy2(os.path.join(directorio_html, archivo_html), os.path.join(directorio_html, "index.html")) >> servidor_temp.py
 echo         print(f"✓ Creado index.html desde {archivo_html}") >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     # Configurar servicio mDNS >> servidor_temp.py
-echo     try: >> servidor_temp.py
-echo         zeroconf, info_servicio = configurar_mdns(ip) >> servidor_temp.py
-echo     except Exception as e: >> servidor_temp.py
-echo         print(f"Fallo configuracion mDNS: {e}") >> servidor_temp.py
-echo         print("Continuando sin mDNS...") >> servidor_temp.py
-echo         zeroconf = None >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     # Iniciar servidor HTTP >> servidor_temp.py
+echo     zeroconf, info_servicio = configurar_mdns(ip) >> servidor_temp.py
 echo     os.chdir(directorio_html) >> servidor_temp.py
 echo     servidor = HTTPServer(("0.0.0.0", 80), SimpleHTTPRequestHandler) >> servidor_temp.py
-echo.     >> servidor_temp.py
-echo     try: >> servidor_temp.py
+echo     def ejecutar_servidor(): >> servidor_temp.py
 echo         servidor.serve_forever() >> servidor_temp.py
+echo     servidor_thread = threading.Thread(target=ejecutar_servidor, daemon=True) >> servidor_temp.py
+echo     servidor_thread.start() >> servidor_temp.py
+echo     print("✓ Servidor iniciado. Presiona Ctrl+C para detener...") >> servidor_temp.py
+echo     try: >> servidor_temp.py
+echo         while servidor_thread.is_alive(): >> servidor_temp.py
+echo             time.sleep(0.1) >> servidor_temp.py
 echo     except KeyboardInterrupt: >> servidor_temp.py
-echo         print("\\nCerrando servidor...") >> servidor_temp.py
-echo         if zeroconf: >> servidor_temp.py
-echo             zeroconf.unregister_service(info_servicio) >> servidor_temp.py
-echo             zeroconf.close() >> servidor_temp.py
-echo         servidor.shutdown() >> servidor_temp.py
+echo         print("\n🛑 Interrupción detectada - cerrando servidor...") >> servidor_temp.py
+echo         try: >> servidor_temp.py
+echo             servidor.socket.close() >> servidor_temp.py
+echo         except: >> servidor_temp.py
+echo             pass >> servidor_temp.py
+echo         servidor.server_close() >> servidor_temp.py
+echo         servidor_thread.join(timeout=0.5) >> servidor_temp.py
+echo         if zeroconf and info_servicio: >> servidor_temp.py
+echo             try: >> servidor_temp.py
+echo                 zeroconf.unregister_service(info_servicio) >> servidor_temp.py
+echo                 zeroconf.close() >> servidor_temp.py
+echo             except: >> servidor_temp.py
+echo                 pass >> servidor_temp.py
+echo         print("✓ Servidor cerrado completamente") >> servidor_temp.py
 
 REM ================================================
-REM        SECCION: INICIO DEL SERVIDOR
-REM        Ejecuta el servidor Python generado y
-REM        muestra información de acceso al usuario
+REM        SECCION: EJECUCION FINAL
+REM        Ejecuta el servidor Python y limpia archivos
 REM ================================================
 echo.
 echo Iniciando servidor con mDNS:
@@ -184,10 +182,20 @@ echo Presiona Ctrl+C para detener el servidor
 echo.
 
 REM --- Ejecutar servidor y limpiar archivo temporal ---
-REM     Inicia el servidor Python y limpia archivos temporales al finalizar
 python servidor_temp.py %ip%
-del servidor_temp.py
+call :cleanup
 
 REM ================================================
 REM                 FIN DEL SCRIPT
 REM ================================================
+goto :eof
+
+REM ================================================
+REM                 FUNCION LIMPIEZA
+REM ================================================
+:cleanup
+if exist servidor_temp.py (
+    del servidor_temp.py >nul 2>&1
+    echo Archivo temporal eliminado.
+)
+exit /b
