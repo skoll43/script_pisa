@@ -186,14 +186,6 @@ REM ================================================
 REM        SECCION: EJECUCION FINAL
 REM        Ejecuta el servidor Python y limpia archivos
 REM ================================================
-echo.
-echo Iniciando servidor con mDNS:
-echo ✓ mDNS transmitiendo pisa.local a la LAN
-echo ✓ Acceso IP directo: http://%ip%
-echo ✓ Acceso por dominio: http://pisa.local (desde cualquier dispositivo)
-echo.
-echo Presiona Ctrl+C para detener el servidor
-echo.
 
 REM --- Ejecutar servidor y limpiar archivo temporal ---
 python servidor_temp.py %ip%
